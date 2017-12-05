@@ -4,7 +4,7 @@ from models import build_model
 from train import train_model
 
 from keras.preprocessing.image import ImageDataGenerator
-from keras.backend import K
+from keras import backend as K
 
 
 def build_data_generator(data_dir, image_shape, batch_size):
@@ -50,22 +50,22 @@ def build_data_generator(data_dir, image_shape, batch_size):
 def main():
     argument_parser = argparse.ArgumentParser()
     argument_parser.add_argument('--model')
-    argument_parser.add_argument('--train-data')
-    argument_parser.add_argument('--test=data')
+    argument_parser.add_argument('--train-data', default='data/train')
+    argument_parser.add_argument('--test-data', default='data/test')
     argument_parser.add_argument('--height', default=256, type=int)
     argument_parser.add_argument('--width', default=256, type=int)
     argument_parser.add_argument('--batch_size', default=32, type=int)
-    argument_parser.add_argument('--image_shape', default='256,256', type=str)
+    argument_parser.add_argument('--image_shape', default='256,256, 3', type=str)
     argument_parser.add_argument('--epochs')
 
     args = argument_parser.parse_args()
 
     image_shape = [int(x) for x in args.image_shape.split(',')]
 
-    model = build_model(args.model_name, (args.width, args.height))
+    model = build_model(args.model, image_shape)
 
-    train_generator = build_data_generator(args.train_data, image_shape, args.batch_size)
-    valid_generator = build_data_generator(args.valid_data, image_shape, args.batch_size)
+    train_generator = build_data_generator(args.train_data, (args.width, args.height), args.batch_size)
+    valid_generator = build_data_generator(args.test_data, (args.width, args.height), args.batch_size)
 
     model.fit_generator(
         train_generator,

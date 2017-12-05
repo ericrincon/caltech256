@@ -37,3 +37,15 @@ def is_image(image_path):
     """
 
     return 'jpg' == image_path.split('.')[-1]
+
+
+def get_subdirs(directory):
+    subdirs = []
+
+    for path in os.listdir(directory):
+        path = os.path.join(directory, path)
+
+        if os.path.isdir(path):
+            subdirs.append(path)
+
+    return subdirs
