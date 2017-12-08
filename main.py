@@ -1,51 +1,7 @@
 import argparse
 
-from models import build_model
-from train import train_model
-
-from keras.preprocessing.image import ImageDataGenerator
-from keras import backend as K
-
-
-def build_data_generator(data_dir, image_shape, batch_size):
-    """
-
-    :param data_dir:
-    :param image_shape:
-    :param batch_size:
-    :return:
-    """
-    # from https://keras.io/preprocessing/image/
-    data_generator = ImageDataGenerator(
-        featurewise_center=False,
-        samplewise_center=False,
-        featurewise_std_normalization=False,
-        samplewise_std_normalization=False,
-        zca_whitening=False,
-        zca_epsilon=1e-6,
-        rotation_range=0.,
-        width_shift_range=0.,
-        height_shift_range=0.,
-        shear_range=0.,
-        zoom_range=0.,
-        channel_shift_range=0.,
-        fill_mode='nearest',
-        cval=0.,
-        horizontal_flip=False,
-        vertical_flip=False,
-        rescale=None,
-        preprocessing_function=None,
-        data_format=K.image_data_format())
-
-
-    generator = data_generator.flow_from_directory(
-        data_dir,
-        target_size=image_shape,
-        batch_size=batch_size,
-        class_mode='categorical')
-
-    return generator
-
+from train import run
+from models import get_available_models
 
 def main():
     argument_parser = argparse.ArgumentParser()
@@ -54,29 +10,43 @@ def main():
     argument_parser.add_argument('--test-data', default='data/test')
     argument_parser.add_argument('--height', default=256, type=int)
     argument_parser.add_argument('--width', default=256, type=int)
-    argument_parser.add_argument('--batch_size', default=32, type=int)
-    argument_parser.add_argument('--image_shape', default='256,256, 3', type=str)
-    argument_parser.add_argument('--epochs')
+    argument_parser.add_argument('--batch-size', default=32, type=int)
+    argument_parser.add_argument('--image_shape', default='', type=str)
+    argument_parser.add_argument('--epochs', type=int, default=50)
+    argument_parser.add_argument('--lr', type=float, default=.001)
 
     args = argument_parser.parse_args()
 
-    image_shape = [int(x) for x in args.image_shape.split(',')]
+    if args.image_shape == '':
+        image_shape = (args.width, args.height, 3)
+    else:
+        image_shape = [int(x) for x in args.image_shape.split(',')]
 
-    model = build_model(args.model, image_shape)
+    default_params = {
+        'image_shape': image_shape,
+        'train_data': args.train_data,
+        'test_data': args.test_data,
+        'lr': args.lr,
+        'batch_size': args.batch_size,
+        'epochs': args.epochs
+    }
 
-    train_generator = build_data_generator(args.train_data, (args.width, args.height), args.batch_size)
-    valid_generator = build_data_generator(args.test_data, (args.width, args.height), args.batch_size)
+    if args.model is None:
+        models = []
 
-    model.fit_generator(
-        train_generator,
-        steps_per_epoch=2000,
-        epochs=50,
-        validation_data=valid_generator,
-        validation_steps=800)
+        for model_name in get_available_models():
+            params = default_params.copy()
 
+            if model_name == 'pvgg16' or model_name == 'irsv2':
+                params['lr'] = .0001
+                params['epochs'] = 25
 
+            models.append((model_name, params))
+    else:
+        models = [(args.model, default_params)]
 
-
+    for model, params in models:
+        run(model, **params)
 
 
 
