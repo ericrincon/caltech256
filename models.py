@@ -2,8 +2,11 @@ from keras.models import Model
 from keras.layers import Input, Conv2D, MaxPooling2D, Flatten, Dense
 
 from keras.applications.vgg16 import VGG16
+from keras.applications.vgg16 import preprocess_input as vgg16_preprocess
+
 from keras.optimizers import Adam
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
+from keras.applications.inception_resnet_v2 import preprocess_input as irv2_preprocess
 
 _opts = {
     'adam': Adam
@@ -23,22 +26,27 @@ def get_opt(opt_name, *args, **kwargs):
 
 
 
-def custom_pretrained_inception_resnetV2(model_input):
-    flat_irv2_output = pretrained_inception_resnetV2(model_input)
+def custom_pretrained_inception_resnetV2(model_input, model_shape, *args, **kwargs):
+    flat_irv2_output = pretrained_inception_resnetV2(model_input, model_shape, *args, **kwargs)
 
-    dense = Dense(256, activation='relu')(flat_irv2_output)
+    dense = Dense(128, activation='relu')(flat_irv2_output)
 
     return dense
 
 
 def pretrained_inception_resnetV2(model_input, model_shape, *args, **kwargs):
+
     model_irsv2 = InceptionResNetV2(weights='imagenet',input_shape=model_shape,
                                     include_top=False)
-
+    # preprocessed_input = irv2_preprocess(model_input)
     irv2_output = model_irsv2(model_input)
     flat_irv2_output = Flatten()(irv2_output)
 
+    for layer in model_irsv2.layers:
+        layer.trainable = False
+
     return flat_irv2_output
+
 
 def pretrained_vgg16(model_input, *args, **kwargs):
     """
@@ -126,8 +134,8 @@ _MODELS = {
     'lenet': lenet,
     'vggnet': vggnet,
     'pvgg16': pretrained_vgg16,
-    'irsv2': pretrained_inception_resnetV2
-
+    'irsv2': pretrained_inception_resnetV2,
+    'cirsv2': custom_pretrained_inception_resnetV2
 }
 
 
